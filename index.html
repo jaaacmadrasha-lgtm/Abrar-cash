@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#047857">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <title>জামিয়াতুল আবরার — ক্যাশ স্টেটমেন্ট ও অ্যাডমিন প্যানেল</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Hind Siliguri', 'Inter', sans-serif;
+      background-color: #f0fdf4;
+      color: #064e3b;
+    }
+    .num-font {
+      font-family: 'Inter', 'Hind Siliguri', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .green-header {
+      background: linear-gradient(135deg, #064e3b 0%, #047857 55%, #065f46 100%);
+      color: #ffffff;
+    }
+    .login-bg {
+      background: radial-gradient(circle at top left, #065f46 0%, #064e3b 45%, #022c22 100%);
+    }
+    .sheet-table th, .sheet-table td {
+      border: 1px solid #d1fae5;
+      padding: 6px 8px;
+      font-size: 0.84rem;
+    }
+    .sheet-table thead th {
+      border-color: #a7f3d0;
+    }
+    .cell-input {
+      width: 100%;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      padding: 2px 5px;
+      transition: all 0.15s ease;
+    }
+    .cell-input:focus {
+      background: #ffffff;
+      border-color: #059669;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
+    }
+    .cell-input:hover {
+      border-color: #6ee7b7;
+      background: rgba(255, 255, 255, 0.75);
+    }
+    .dropzone-active {
+      border-color: #059669 !important;
+      background-color: #dcfce7 !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- ==================== ADMIN LOGIN SCREEN (LOCKED OVERLAY) ==================== -->
+  <div id="loginScreen" class="fixed inset-0 z-50 login-bg flex items-center justify-center p-4">
+    <div class="bg-white/95 backdrop-blur rounded-3xl shadow-2xl border border-emerald-200 max-w-md w-full p-6 sm:p-8 space-y-5">
+      <div class="text-center space-y-2">
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-emerald-100 border-2 border-emerald-300 flex items-center justify-center text-3xl shadow-inner">
+          🕌
+        </div>
+        <h1 class="text-lg sm:text-xl font-extrabold text-emerald-950 leading-snug">
+          জামিয়াতুল আবরার আল ইসলামিয়া আনোয়ারা কমপ্লেক্স
+        </h1>
+        <p class="text-xs text-emerald-700 font-medium">
+          🔐 সুরক্ষিত অ্যাডমিন লগইন — শুধুমাত্র অনুমোদিত অ্যাডমিন প্রবেশ করতে পারবেন
+        </p>
+      </div>
+
+      <div class="space-y-3.5">
+        <div>
+          <label for="loginUsername" class="block text-xs font-bold text-emerald-900 mb-1">অ্যাডমিন আইডি (Username)</label>
+          <input id="loginUsername" type="text" value="admin" placeholder="admin" class="w-full border border-emerald-300 rounded-xl px-3.5 py-2.5 text-sm bg-emerald-50/40 focus:bg-white focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200">
+        </div>
+        <div>
+          <label for="loginPin" class="block text-xs font-bold text-emerald-900 mb-1">পাসওয়ার্ড / পিন (PIN)</label>
+          <input id="loginPin" type="password" value="1234" placeholder="••••" onkeydown="if(event.key==='Enter') handleLogin()" class="w-full border border-emerald-300 rounded-xl px-3.5 py-2.5 text-sm bg-emerald-50/40 focus:bg-white focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200 num-font">
+        </div>
+        <div id="loginErrorMsg" class="hidden text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+          ❌ ভুল আইডি বা পিন! অনুগ্রহ করে সঠিক অ্যাডমিন তথ্য দিন।
+        </div>
+        <button onclick="handleLogin()" class="w-full py-3 rounded-xl text-sm font-bold bg-emerald-700 hover:bg-emerald-800 text-white shadow-lg shadow-emerald-900/20 transition">
+          🔓 অ্যাডমিন প্যানেলে প্রবেশ করুন
+        </button>
+      </div>
+
+      <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center text-[11px] text-emerald-800">
+        ডিফল্ট টেস্ট লগইন: আইডি <strong>admin</strong> • পিন <strong>1234</strong><br>
+        <span class="text-emerald-600">(ভেতরে ঢুকে অ্যাডমিন প্যানেল থেকে পিন পরিবর্তন ও নতুন অ্যাডমিন যোগ করা যাবে)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN PROTECTED APP SHELL ==================== -->
+  <div id="mainAppShell" class="hidden flex-1 flex flex-col">
+
+    <!-- Top Emerald Header -->
+    <header class="green-header shadow-lg sticky top-0 z-30">
+      <div class="max-w-[1600px] mx-auto px-3 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/15 border border-emerald-300/30 flex items-center justify-center text-2xl shadow-inner">
+            🕌
+          </div>
+          <div>
+            <h1 class="text-base sm:text-lg font-bold tracking-wide text-white leading-tight">
+              JAMIYATUL ABRAR AL ISLAMIA ANWARA COMPLEX
+            </h1>
+            <p class="text-xs text-emerald-100 flex flex-wrap items-center gap-2">
+              <span>📅 Cash Statement — November 2026</span>
+              <span class="hidden sm:inline">•</span>
+              <span id="loggedInAdminBadge" class="bg-white/15 text-emerald-50 border border-emerald-300/30 px-2 py-0.5 rounded-full text-[11px]">👤 অ্যাডমিন: admin</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Clean Navigation Tabs -->
+        <div class="flex flex-wrap items-center gap-2">
+          <nav class="flex flex-wrap items-center gap-1 bg-emerald-950/40 p-1 rounded-xl border border-emerald-600/40">
+            <button id="tabBtnSheet" onclick="switchTab('sheet')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition bg-white text-emerald-950 shadow">
+              📊 ৩-বক্স হিসাব শিট
+            </button>
+            <button id="tabBtnPhoto" onclick="switchTab('photo')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-emerald-100 hover:bg-emerald-800/60">
+              📸 সফটওয়্যার ফটো স্ক্যানার
+            </button>
+            <button id="tabBtnAdmin" onclick="switchTab('admin')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-emerald-100 hover:bg-emerald-800/60">
+              🔐 অ্যাডমিন প্যানেল ও নিয়ম
+            </button>
+          </nav>
+          <button onclick="handleLogout()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600/90 hover:bg-rose-600 text-white border border-rose-400/40 transition shadow-sm">
+            🔒 লক
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Live Top KPI Strip (Green Aesthetic) -->
+    <section class="bg-white border-b border-emerald-200 shadow-sm">
+      <div class="max-w-[1600px] mx-auto px-3 sm:px-6 py-2.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+        <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl px-3 py-2">
+          <div class="text-[11px] text-emerald-700 font-semibold">🏛️ ১. ক্যাশ ইন হ্যান্ড (প্রতিষ্ঠান)</div>
+          <div id="kpiCashInHand" class="text-base sm:text-lg font-bold text-emerald-950 num-font">285,254 ৳</div>
+        </div>
+        <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl px-3 py-2">
+          <div class="text-[11px] text-emerald-700 font-semibold">🏦 ১. ব্যাংক ব্যালেন্স (প্রতিষ্ঠান)</div>
+          <div id="kpiBankBalance" class="text-base sm:text-lg font-bold text-teal-800 num-font">1,005,000 ৳</div>
+        </div>
+        <div class="bg-teal-50/70 border border-teal-200 rounded-xl px-3 py-2">
+          <div class="text-[11px] text-teal-800 font-semibold">🏢 ২. অফিস জমা ও সাময়িক ঋণ</div>
+          <div id="kpiOfficeTotal" class="text-base sm:text-lg font-bold text-teal-950 num-font">311,300 ৳</div>
+        </div>
+        <div class="bg-amber-50/80 border border-amber-200 rounded-xl px-3 py-2">
+          <div class="text-[11px] text-amber-900 font-semibold">🕌 নিট মাদরাসা ক্যাশ (P32)</div>
+          <div id="kpiMadrasaCash" class="text-base sm:text-lg font-bold text-rose-700 num-font">-26,046 ৳</div>
+        </div>
+        <div id="kpiDiffCard" class="bg-rose-50 border border-rose-300 rounded-xl px-3 py-2 col-span-2 sm:col-span-1">
+          <div class="text-[11px] text-rose-800 font-semibold">⚖️ ৩. নিজস্ব হ্যান্ডেলিং পার্থক্য</div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="kpiBox3Diff" class="text-base sm:text-lg font-bold text-rose-700 num-font">121 ৳</span>
+            <span id="kpiBox3Status" class="text-[11px] font-semibold text-rose-700">জমা থেকে টাকা কম</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-6 py-4">
+
+      <!-- ==================== TAB 1: EXACT 3-BOX SHEET (NO BUDGET TRACKER) ==================== -->
+      <div id="viewSheet" class="space-y-5">
+
+        <!-- Compact Toolbar -->
+        <div class="bg-white p-3 rounded-xl border border-emerald-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-bold text-emerald-900">🔄 ৩-নং বক্সের মোড:</span>
+            <button id="btnModeOriginal" onclick="applyBox3Preset('original')" class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100">
+              📄 মূল শিট (পার্সোনাল ৫,৫০০ ৳ + স্টুডেন্ট বিকাশ ৫০০ ৳)
+            </button>
+            <button id="btnModeBlane" onclick="applyBox3Preset('blane')" class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition bg-emerald-700 text-white border-emerald-700 shadow-sm">
+              🌿 আপডেটেড শিট (পার্সোনাল ৬,০০০ ৳ + এক্সট্রা ৫০০ ৳)
+            </button>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="switchTab('photo')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-700 text-white hover:bg-emerald-800 transition shadow-sm">
+              📸 সফটওয়্যারের ফটো থেকে হিসাব বসান
+            </button>
+            <button onclick="exportCSV()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 text-white hover:bg-teal-700 transition shadow-sm">
+              📥 CSV ডাউনলোড
+            </button>
+          </div>
+        </div>
+
+        <!-- 3-SECTION LAYOUT: First 2 = Institutional (প্রতিষ্ঠানের), 3rd = Personal Handling (নিজস্ব) -->
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+
+          <!-- SECTION 1 (প্রতিষ্ঠানের ১): মূল হিসাব আয়-ব্যয় -->
+          <div class="xl:col-span-6 bg-white rounded-2xl border border-emerald-200 shadow-sm overflow-hidden">
+            <div class="bg-emerald-800 text-white px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold uppercase tracking-wider bg-emerald-950/60 text-emerald-200 px-2 py-0.5 rounded-full">প্রতিষ্ঠানের অংশ ১</span>
+                  <h2 class="text-sm font-bold">📗 মূল হিসাব — আয় ও ব্যয় (Receipt & Payment)</h2>
+                </div>
+                <p class="text-[11px] text-emerald-100 mt-0.5">যেকোনো ঘরে ক্লিক করে সরাসরি তারিখ, বিবরণ বা টাকা পরিবর্তন করুন</p>
+              </div>
+              <span class="text-xs bg-white/15 px-2.5 py-1 rounded-lg font-semibold text-emerald-50">November 2026</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-emerald-200">
+              <!-- Receipt -->
+              <div class="p-2.5">
+                <div class="bg-emerald-700 text-white px-3 py-1.5 rounded-t-lg flex items-center justify-between">
+                  <span class="text-xs font-bold">📥 আয় / জমা (Receipt)</span>
+                  <button onclick="openAddModal('receipt')" class="text-[11px] bg-white text-emerald-900 font-bold px-2 py-0.5 rounded hover:bg-emerald-50">
+                    + নতুন জমা
+                  </button>
+                </div>
+                <div class="overflow-x-auto max-h-[500px] overflow-y-auto border-x border-b border-emerald-200">
+                  <table class="w-full sheet-table border-collapse">
+                    <thead class="bg-emerald-50 sticky top-0 z-10 text-emerald-900">
+                      <tr>
+                        <th class="w-8 text-center">SL</th>
+                        <th class="w-20 text-left">DATE</th>
+                        <th class="text-left">Particulars</th>
+                        <th class="w-24 text-right">TAKA</th>
+                        <th class="w-7 text-center">✖</th>
+                      </tr>
+                    </thead>
+                    <tbody id="receiptTableBody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Payment -->
+              <div class="p-2.5">
+                <div class="bg-teal-800 text-white px-3 py-1.5 rounded-t-lg flex items-center justify-between">
+                  <span class="text-xs font-bold">📤 ব্যয় / ভাউচার (Payment)</span>
+                  <button onclick="openAddModal('payment')" class="text-[11px] bg-white text-teal-950 font-bold px-2 py-0.5 rounded hover:bg-teal-50">
+                    + নতুন ভাউচার
+                  </button>
+                </div>
+                <div class="overflow-x-auto max-h-[500px] overflow-y-auto border-x border-b border-emerald-200">
+                  <table class="w-full sheet-table border-collapse">
+                    <thead class="bg-teal-50 sticky top-0 z-10 text-teal-950">
+                      <tr>
+                        <th class="w-8 text-center">SL</th>
+                        <th class="w-20 text-left">DATE</th>
+                        <th class="w-14 text-center">VOU.</th>
+                        <th class="text-left">Particulars</th>
+                        <th class="w-24 text-right">TAKA</th>
+                        <th class="w-7 text-center">✖</th>
+                      </tr>
+                    </thead>
+                    <tbody id="paymentTableBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 1 Totals -->
+            <div class="bg-emerald-50/80 border-t-2 border-emerald-300 p-3 space-y-2 text-xs">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div class="flex justify-between items-center bg-white border border-emerald-200 px-3 py-1.5 rounded-lg font-bold text-emerald-950">
+                  <span>TOTAL RECEIPT (ক্যাশ জমা):</span>
+                  <span id="box1TotalReceipt" class="num-font text-sm text-emerald-700">1,501,795 ৳</span>
+                </div>
+                <div class="flex justify-between items-center bg-white border border-rose-200 px-3 py-1.5 rounded-lg font-bold text-rose-900">
+                  <span>TOTAL PAYMENT (মোট ব্যয়):</span>
+                  <span id="box1TotalPayment" class="num-font text-sm text-rose-700">1,216,541 ৳</span>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div class="flex justify-between items-center bg-emerald-100 border border-emerald-300 px-3 py-2 rounded-lg font-bold text-emerald-950">
+                  <span>CASH IN HAND:</span>
+                  <span id="box1CashInHand" class="num-font text-sm">285,254 ৳</span>
+                </div>
+                <div class="flex justify-between items-center bg-teal-100 border border-teal-300 px-3 py-2 rounded-lg font-bold text-teal-950">
+                  <span>BANK BALANCE:</span>
+                  <span id="box1BankBalance" class="num-font text-sm">1,005,000 ৳</span>
+                </div>
+                <div class="flex justify-between items-center bg-emerald-900 text-white px-3 py-2 rounded-lg font-bold">
+                  <span>TOTAL BALANCE:</span>
+                  <span id="box1TotalBalance" class="num-font text-sm text-emerald-200">1,290,254 ৳</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 2 (প্রতিষ্ঠানের ২): অফিস জমা ও বিভিন্ন ধার / সাময়িক ঋণ -->
+          <div class="xl:col-span-2 bg-white rounded-2xl border border-emerald-200 shadow-sm overflow-hidden">
+            <div class="bg-teal-800 text-white px-3.5 py-2.5 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-bold uppercase tracking-wider bg-teal-950/60 text-teal-200 px-2 py-0.5 rounded-full">প্রতিষ্ঠানের অংশ ২</span>
+                <h2 class="text-sm font-bold mt-1">🏢 অফিস জমা ও সাময়িক ঋণ/ধার</h2>
+              </div>
+              <button onclick="openAddModal('office')" class="text-[11px] bg-white text-teal-950 font-bold px-2 py-1 rounded-lg hover:bg-teal-50">
+                + যোগ
+              </button>
+            </div>
+
+            <div class="p-2.5">
+              <table class="w-full sheet-table border-collapse">
+                <thead class="bg-teal-50 text-teal-950">
+                  <tr>
+                    <th class="text-left">অফিস জমা / ধার</th>
+                    <th class="w-24 text-right">টাকা</th>
+                    <th class="w-7 text-center">✖</th>
+                  </tr>
+                </thead>
+                <tbody id="officeTableBody"></tbody>
+              </table>
+
+              <div class="mt-3 space-y-2 text-xs border-t border-emerald-100 pt-2.5">
+                <div class="flex justify-between items-center text-emerald-900 px-1">
+                  <span>মোট অফিস জমা ও ধার:</span>
+                  <span id="box2TotalAllocated" class="font-bold num-font">311,300 ৳</span>
+                </div>
+                <div class="flex justify-between items-center text-emerald-800 px-1">
+                  <span>স্টুডেন্ট সমন্বয় (K33):</span>
+                  <input id="inputStudentAdjK33" type="number" value="0" oninput="updateStudentAdjK33(this.value)" class="w-20 text-right border border-emerald-300 rounded px-1.5 py-0.5 num-font font-semibold bg-emerald-50/50">
+                </div>
+                <div class="bg-emerald-50 border-2 border-emerald-400 rounded-xl p-2.5">
+                  <div class="text-[11px] text-emerald-800 font-bold">নিট মাদরাসা ক্যাশ (P32)</div>
+                  <div id="box2MadrasaCash" class="text-base font-extrabold text-rose-700 num-font mt-0.5">-26,046 ৳</div>
+                  <div class="text-[10px] text-emerald-700 mt-0.5">স্বয়ংক্রিয়ভাবে ৩-নং বক্সে যুক্ত</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 3 (নিজস্ব ৩): কিভাবে আছে, কোথায় আছে (যেভাবে পার্সোনাল হিসাবগুলো আছে সেভাবেই) -->
+          <div class="xl:col-span-4 bg-white rounded-2xl border-2 border-emerald-500 shadow-sm overflow-hidden">
+            <div class="bg-emerald-900 text-white px-4 py-2.5 flex items-center justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold uppercase tracking-wider bg-amber-400 text-emerald-950 px-2 py-0.5 rounded-full">নিজস্ব অংশ ৩</span>
+                  <h2 class="text-sm font-bold">💼 প্রাপ্ত/জমা বনাম কোথায় আছে</h2>
+                </div>
+                <p class="text-[11px] text-emerald-200 mt-0.5">পার্সোনাল হ্যান্ডেলিং • নগদ (-১৫/হাজার) ও বিকাশ (-২০/হাজার) অটো ফর্মুলা</p>
+              </div>
+            </div>
+
+            <div class="p-2.5 grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              <!-- Left: প্রাপ্ত/জমার লিস্ট -->
+              <div class="border border-emerald-200 rounded-xl overflow-hidden flex flex-col justify-between">
+                <div>
+                  <div class="bg-emerald-700 text-white px-2.5 py-1.5 flex items-center justify-between text-xs font-bold">
+                    <span>📋 প্রাপ্ত/জমার লিস্ট</span>
+                    <button onclick="openAddModal('deposit')" class="text-[11px] bg-white text-emerald-950 px-1.5 py-0.5 rounded font-bold">+ খাত</button>
+                  </div>
+                  <table class="w-full sheet-table border-collapse">
+                    <thead class="bg-emerald-50 text-emerald-900">
+                      <tr>
+                        <th class="text-left">জমার খাত</th>
+                        <th class="w-24 text-right">টাকা</th>
+                        <th class="w-6 text-center">✖</th>
+                      </tr>
+                    </thead>
+                    <tbody id="box3DepositBody"></tbody>
+                  </table>
+                </div>
+                <div class="bg-emerald-100 border-t-2 border-emerald-500 px-3 py-2 flex justify-between items-center font-bold text-xs text-emerald-950">
+                  <span>TOTAL জমা:</span>
+                  <span id="box3TotalExpected" class="num-font text-sm">55,069 ৳</span>
+                </div>
+              </div>
+
+              <!-- Right: কোথায় আছে -->
+              <div class="border border-emerald-200 rounded-xl overflow-hidden flex flex-col justify-between">
+                <div>
+                  <div class="bg-teal-700 text-white px-2.5 py-1.5 flex items-center justify-between text-xs font-bold">
+                    <span>💵 কোথায় আছে</span>
+                    <button onclick="openAddModal('loan')" class="text-[11px] bg-white text-teal-950 px-1.5 py-0.5 rounded font-bold">+ হাওলাত</button>
+                  </div>
+                  <table class="w-full sheet-table border-collapse">
+                    <thead class="bg-teal-50 text-teal-950">
+                      <tr>
+                        <th class="text-left">কোথায় আছে</th>
+                        <th class="w-20 text-right">নিট টাকা</th>
+                        <th class="w-20 text-right">মূল অ্যাপ</th>
+                      </tr>
+                    </thead>
+                    <tbody id="box3HoldingsBody"></tbody>
+                  </table>
+                </div>
+                <div class="bg-teal-100 border-t-2 border-teal-500 px-3 py-2 flex justify-between items-center font-bold text-xs text-teal-950">
+                  <span>TOTAL বাস্তব:</span>
+                  <span id="box3TotalActual" class="num-font text-sm">54,948.26 ৳</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Box 3 Difference Status Banner -->
+            <div class="px-3 pb-3 space-y-2.5">
+              <div id="box3StatusBanner" class="rounded-xl p-3 border-2 flex flex-wrap items-center justify-between gap-2 bg-rose-50 border-rose-400 text-rose-900">
+                <div>
+                  <div class="text-[11px] font-bold uppercase tracking-wider opacity-80">DIFFERENCE IN AC (জমা - বাস্তব)</div>
+                  <div id="box3BannerText" class="text-base sm:text-lg font-extrabold mt-0.5">জমা থেকে টাকা কম</div>
+                </div>
+                <div class="text-right">
+                  <div id="box3BannerExact" class="text-2xl font-black num-font">121 ৳</div>
+                  <div id="box3BannerUnrounded" class="text-[11px] font-medium num-font opacity-80">সঠিক ভগ্নাংশ: 120.74 ৳</div>
+                </div>
+              </div>
+
+              <!-- Compact Collapsible Personal 6000 & 500 Note (Small & Neat inside Section 3) -->
+              <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-2.5 text-xs">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-emerald-900">👤 পার্সোনাল নোট (৬,০০০ ৳ ও ৫০০ ৳ গাড়ি ভাড়া)</span>
+                  <button id="btnToggleMiniPersonal" onclick="toggleMiniPersonal()" class="text-[11px] font-bold text-emerald-700 hover:underline">
+                    খরচ দেখুন ▾
+                  </button>
+                </div>
+                <div class="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                  <span class="bg-white border border-emerald-200 px-2 py-1 rounded-lg">
+                    সাধারণ ৬,০০০ ৳: খরচ <strong id="miniSpent6000" class="text-rose-700 num-font">2,510</strong> • বাকি <strong id="miniRem6000" class="text-emerald-700 num-font">3,490 ৳</strong>
+                  </span>
+                  <span class="bg-white border border-amber-200 px-2 py-1 rounded-lg">
+                    🚕 গাড়ি ভাড়া ৫০০ ৳: বাকি <strong id="miniRem500" class="text-amber-700 num-font">500 ৳</strong>
+                  </span>
+                </div>
+
+                <!-- Compact Expandable Expense Drawer -->
+                <div id="miniPersonalDrawer" class="hidden mt-2.5 pt-2.5 border-t border-emerald-200 space-y-2">
+                  <div class="flex flex-wrap gap-1.5">
+                    <input id="miniExpTitle" type="text" placeholder="বিবরণ (যেমন: 🚕 গাড়ি ভাড়া / 🍵 চা)" class="flex-1 min-w-[130px] border border-emerald-300 rounded-lg px-2 py-1 text-xs bg-white">
+                    <select id="miniExpBucket" class="border border-emerald-300 rounded-lg px-2 py-1 text-xs bg-white font-semibold">
+                      <option value="personal6000">৬,০০০ ৳ থেকে</option>
+                      <option value="extra500">৫০০ ৳ গাড়ি ভাড়া</option>
+                    </select>
+                    <input id="miniExpAmount" type="number" placeholder="টাকা" class="w-20 border border-emerald-300 rounded-lg px-2 py-1 text-xs bg-white num-font font-bold">
+                    <button onclick="addMiniPersonalExpense()" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-700 text-white hover:bg-emerald-800">+ যোগ</button>
+                  </div>
+                  <div class="max-h-40 overflow-y-auto bg-white rounded-lg border border-emerald-200">
+                    <table class="w-full sheet-table border-collapse">
+                      <tbody id="miniPersonalList"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ==================== TAB 2: SOFTWARE PHOTO SCANNER ==================== -->
+      <div id="viewPhoto" class="hidden space-y-5">
+        <div class="bg-white rounded-2xl border border-emerald-200 shadow-sm p-4 sm:p-6">
+          <div class="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-emerald-100">
+            <div>
+              <h2 class="text-lg font-bold text-emerald-950">📸 সফটওয়্যারের ফটো স্ক্যানার ও অটো-ইমপোর্টার</h2>
+              <p class="text-xs sm:text-sm text-emerald-700 mt-1">
+                সফটওয়্যার থেকে প্রতিদিনের হিসাবের ফটো এখানে ছেড়ে দিন — তারিখ, জমা ও ভাউচার খরচ স্বয়ংক্রিয়ভাবে পড়ে নিয়ে ১ ক্লিকে ১ নম্বর বক্সে বসিয়ে দেবে।
+              </p>
+            </div>
+            <button onclick="loadDemoSoftwareStatement()" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-700 text-white hover:bg-emerald-800 shadow transition">
+              ⚡ ডেমো ফটো দিয়ে টেস্ট করুন (১৭ নভেম্বর)
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-5">
+            <!-- Left: Dropzone -->
+            <div class="lg:col-span-5 space-y-4">
+              <div id="photoDropzone"
+                   ondragover="handleDragOver(event)"
+                   ondragleave="handleDragLeave(event)"
+                   ondrop="handleFileDrop(event)"
+                   onclick="document.getElementById('photoFileInput').click()"
+                   class="border-2 border-dashed border-emerald-400 bg-emerald-50/50 hover:bg-emerald-50 rounded-2xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center min-h-[220px]">
+                <input id="photoFileInput" type="file" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+                <div class="w-14 h-14 rounded-2xl bg-emerald-600/15 text-emerald-700 flex items-center justify-center text-3xl mb-2.5">
+                  🖼️
+                </div>
+                <p class="text-sm font-bold text-emerald-950">সফটওয়্যারের ছবি এখানে টেনে ছেড়ে দিন</p>
+                <p class="text-xs text-emerald-700 mt-1">অথবা ক্লিক করে মোবাইল/কম্পিউটার থেকে ফটো সিলেক্ট করুন</p>
+              </div>
+
+              <div id="photoPreviewContainer" class="hidden bg-emerald-950 rounded-xl p-3 text-white space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span id="photoFileName" class="font-semibold text-emerald-300 truncate">statement.png</span>
+                  <span id="ocrStatusText" class="bg-emerald-500/20 text-emerald-200 px-2 py-0.5 rounded-full">স্ক্যান সম্পন্ন ✅</span>
+                </div>
+                <div class="bg-emerald-900/60 rounded-lg overflow-hidden max-h-56 flex items-center justify-center border border-emerald-800">
+                  <img id="uploadedImageEl" src="" alt="Software Statement Preview" class="max-w-full h-auto max-h-52 object-contain hidden">
+                  <div id="demoStatementGraphic" class="w-full p-3 text-left font-mono text-xs text-emerald-200 space-y-1 hidden"></div>
+                </div>
+              </div>
+
+              <div class="bg-emerald-50/60 border border-emerald-200 rounded-xl p-3 space-y-2">
+                <label for="rawSoftwareTextInput" class="block text-xs font-bold text-emerald-900">📋 অথবা সফটওয়্যারের টেক্সট পেস্ট করুন:</label>
+                <textarea id="rawSoftwareTextInput" rows="2" placeholder="17-11-26 Tuition/Boarding Fee 42500 | Voucher 922 Bording Bazar 18400" class="w-full text-xs border border-emerald-300 rounded-lg p-2 bg-white focus:outline-none focus:border-emerald-600"></textarea>
+                <button onclick="parseRawTextToStaging()" class="w-full py-1.5 rounded-lg text-xs font-bold bg-emerald-800 text-white hover:bg-emerald-900 transition">
+                  🔍 টেক্সট থেকে হিসাব তৈরি করুন
+                </button>
+              </div>
+            </div>
+
+            <!-- Right: Staging Table & Checklist -->
+            <div class="lg:col-span-7 space-y-4">
+              <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5">
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-xs sm:text-sm font-bold text-emerald-950">✅ সফটওয়্যার বনাম শিট ৮-পয়েন্ট ভেরিফিকেশন</h3>
+                  <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-200 text-emerald-900">সবগুলো বিষয়ে মিল আছে ✅</span>
+                </div>
+                <div id="matcherChecklistGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs"></div>
+              </div>
+
+              <div class="border border-emerald-200 rounded-xl overflow-hidden bg-white">
+                <div class="bg-emerald-800 text-white px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+                  <h3 class="text-xs sm:text-sm font-bold">📥 ইমপোর্ট প্রিভিউ (১ ক্লিকে বক্স ১-এ বসবে)</h3>
+                  <button onclick="addBlankStagingRow()" class="text-xs bg-white text-emerald-950 font-bold px-2.5 py-1 rounded hover:bg-emerald-50">+ সারি যোগ</button>
+                </div>
+                <div class="overflow-x-auto">
+                  <table class="w-full sheet-table border-collapse">
+                    <thead class="bg-emerald-50 text-emerald-950">
+                      <tr>
+                        <th class="w-24 text-left">ধরন</th>
+                        <th class="w-24 text-left">তারিখ</th>
+                        <th class="w-20 text-center">ভাউচার</th>
+                        <th class="text-left">বিবরণ</th>
+                        <th class="w-28 text-right">টাকা</th>
+                        <th class="w-8 text-center">✖</th>
+                      </tr>
+                    </thead>
+                    <tbody id="stagingTableBody"></tbody>
+                  </table>
+                </div>
+                <div class="bg-emerald-50/70 p-3 border-t border-emerald-200 flex flex-wrap items-center justify-between gap-3">
+                  <div id="stagingSummaryText" class="text-xs font-semibold text-emerald-900">প্রস্তুত: ০টি জমা এবং ০টি খরচ</div>
+                  <button onclick="commitStagingToBox1()" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-700 text-white hover:bg-emerald-800 shadow transition">
+                    ✅ মূল শিটে (বক্স ১) অটো-বসিয়ে দিন
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== TAB 3: ADMIN PANEL, LOGIN MANAGEMENT & RULES ==================== -->
+      <div id="viewAdmin" class="hidden space-y-5">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-5xl mx-auto">
+
+                    <!-- Google Sheet Live Sync Connector -->
+          <div class="bg-white rounded-2xl border-2 border-emerald-400 shadow-sm p-5 space-y-3.5 lg:col-span-2">
+            <div class="border-b border-emerald-100 pb-2.5 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 class="text-base font-bold text-emerald-950">☁️ গুগল শিট লাইভ কানেক্টর (ওয়েব ও APK অটো-সিঙ্ক)</h2>
+                <p class="text-xs text-emerald-700 mt-0.5">Code.gs থেকে পাওয়া Web App URL এখানে দিলে ওয়েব ও মোবাইল অ্যাপের হিসাব সরাসরি গুগল শিটের সাথে সিঙ্ক হবে</p>
+              </div>
+              <span id="sheetSyncStatusBadge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900">🔌 কানেকশন প্রস্তুত</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end">
+              <div class="md:col-span-6">
+                <label for="gsWebAppUrl" class="block text-xs font-bold text-emerald-900 mb-1">Google Apps Script Web App URL</label>
+                <input id="gsWebAppUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec" oninput="saveSyncConfig()" class="w-full border border-emerald-300 rounded-xl px-3 py-2 text-xs bg-emerald-50/40 focus:bg-white">
+              </div>
+              <div class="md:col-span-2">
+                <label for="gsSecretKey" class="block text-xs font-bold text-emerald-900 mb-1">সিক্রেট কোড</label>
+                <input id="gsSecretKey" type="text" value="abrar2026" oninput="saveSyncConfig()" class="w-full border border-emerald-300 rounded-xl px-3 py-2 text-xs bg-emerald-50/40 focus:bg-white num-font">
+              </div>
+              <div class="md:col-span-2">
+                <button onclick="pullFromGoogleSheet()" class="w-full py-2 rounded-xl text-xs font-bold bg-teal-700 text-white hover:bg-teal-800 transition shadow-sm">
+                  🔄 শিট থেকে আনুন
+                </button>
+              </div>
+              <div class="md:col-span-2">
+                <button onclick="pushToGoogleSheet()" class="w-full py-2 rounded-xl text-xs font-bold bg-emerald-700 text-white hover:bg-emerald-800 transition shadow-sm">
+                  ☁️ শিটে পাঠান
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin Access & User Management -->
+          <div class="bg-white rounded-2xl border border-emerald-200 shadow-sm p-5 space-y-4">
+            <div class="border-b border-emerald-100 pb-3">
+              <h2 class="text-base font-bold text-emerald-950">🔐 অ্যাডমিন প্যানেল ও লগইন নিয়ন্ত্রণ</h2>
+              <p class="text-xs text-emerald-700 mt-0.5">শুধুমাত্র এই তালিকায় থাকা অ্যাডমিনরাই অ্যাপে ঢুকতে পারবেন</p>
+            </div>
+
+            <!-- Admin List -->
+            <div class="space-y-2">
+              <div class="text-xs font-bold text-emerald-900">অনুমোদিত অ্যাডমিন তালিকা:</div>
+              <div id="adminListContainer" class="space-y-2"></div>
+            </div>
+
+            <!-- Add New Admin Form -->
+            <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 space-y-2.5">
+              <div class="text-xs font-bold text-emerald-950">➕ নতুন অ্যাডমিন যোগ করুন বা পিন পরিবর্তন করুন</div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <input id="newAdminUser" type="text" placeholder="আইডি (যেমন: shuaib)" class="border border-emerald-300 rounded-lg px-2.5 py-1.5 text-xs bg-white">
+                <input id="newAdminPin" type="text" placeholder="পিন (যেমন: 4567)" class="border border-emerald-300 rounded-lg px-2.5 py-1.5 text-xs bg-white num-font">
+                <button onclick="addOrUpdateAdmin()" class="py-1.5 rounded-lg text-xs font-bold bg-emerald-700 text-white hover:bg-emerald-800 transition">
+                  সংরক্ষণ করুন
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calculation Rules & Backup -->
+          <div class="bg-white rounded-2xl border border-emerald-200 shadow-sm p-5 space-y-4">
+            <div class="border-b border-emerald-100 pb-3">
+              <h2 class="text-base font-bold text-emerald-950">⚙️ হিসাবের নিয়ম ও ডেটা ব্যাকআপ</h2>
+              <p class="text-xs text-emerald-700 mt-0.5">বিকাশ/নগদ চার্জ ও ব্যাকআপ এখান থেকে নিয়ন্ত্রণ করুন</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="bg-emerald-50/60 p-3 rounded-xl border border-emerald-200">
+                <label for="ruleNagadFee" class="block text-xs font-bold text-emerald-900">🟠 নগদ চার্জ (প্রতি হাজারে)</label>
+                <input id="ruleNagadFee" type="number" step="0.5" value="15" oninput="updateCustomRule('nagadFee', this.value)" class="mt-1.5 w-full border border-emerald-300 rounded-lg px-3 py-1.5 text-sm font-bold num-font bg-white">
+              </div>
+              <div class="bg-emerald-50/60 p-3 rounded-xl border border-emerald-200">
+                <label for="ruleBkashFee" class="block text-xs font-bold text-emerald-900">💗 বিকাশ চার্জ (প্রতি হাজারে)</label>
+                <input id="ruleBkashFee" type="number" step="0.5" value="20" oninput="updateCustomRule('bkashFee', this.value)" class="mt-1.5 w-full border border-emerald-300 rounded-lg px-3 py-1.5 text-sm font-bold num-font bg-white">
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 pt-2">
+              <button onclick="exportJSONBackup()" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-700 text-white hover:bg-emerald-800 transition">
+                💾 ব্যাকআপ ডাউনলোড (JSON)
+              </button>
+              <button onclick="exportCSV()" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-teal-600 text-white hover:bg-teal-700 transition">
+                📊 শিট ডাউনলোড (CSV)
+              </button>
+              <button onclick="resetToDefaultSheetData()" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-300 transition">
+                🔄 মূল শিটে রিসেট
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Add Row Modal -->
+  <div id="addRowModal" class="fixed inset-0 bg-emerald-950/60 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-emerald-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-emerald-100 pb-2.5">
+        <h3 id="modalTitle" class="text-sm font-bold text-emerald-950">নতুন এন্ট্রি যোগ করুন</h3>
+        <button onclick="closeAddModal()" class="text-emerald-600 hover:text-emerald-900 font-bold text-lg">✕</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div id="modalDateWrap">
+          <label for="modalInputDate" class="block font-bold text-emerald-900 mb-1">তারিখ (DD-MM-YY)</label>
+          <input id="modalInputDate" type="text" value="17-11-26" class="w-full border border-emerald-300 rounded-lg px-3 py-2">
+        </div>
+        <div id="modalVoucherWrap" class="hidden">
+          <label for="modalInputVoucher" class="block font-bold text-emerald-900 mb-1">ভাউচার নম্বর</label>
+          <input id="modalInputVoucher" type="number" value="922" class="w-full border border-emerald-300 rounded-lg px-3 py-2 num-font">
+        </div>
+        <div>
+          <label for="modalInputName" class="block font-bold text-emerald-900 mb-1">বিবরণ / নাম</label>
+          <input id="modalInputName" type="text" placeholder="যেমন: Tuition/Boarding Fee বা Bording Bazar" class="w-full border border-emerald-300 rounded-lg px-3 py-2">
+        </div>
+        <div>
+          <label for="modalInputAmount" class="block font-bold text-emerald-900 mb-1">টাকার পরিমাণ (৳)</label>
+          <input id="modalInputAmount" type="number" placeholder="0" class="w-full border border-emerald-300 rounded-lg px-3 py-2 num-font font-bold">
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeAddModal()" class="px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 hover:bg-emerald-100">বাতিল</button>
+        <button onclick="submitAddModal()" class="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-700 text-white hover:bg-emerald-800">যোগ করুন</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastBox" class="fixed bottom-4 right-4 z-50 hidden bg-emerald-950 text-emerald-50 px-4 py-2.5 rounded-xl shadow-lg border border-emerald-700 text-xs font-semibold">
+    <span id="toastMsg">আপডেট সম্পন্ন হয়েছে</span>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'jamiyatul_abrar_green_app_v2';
+    let currentModalType = 'receipt';
+    let loggedInUser = null;
+
+    function getDefaultState() {
+      return {
+        mode: 'blane',
+        admins: [
+          { username: 'admin', pin: '1234', role: 'সুপার অ্যাডমিন' }
+        ],
+        rules: {
+          nagadFee: 15,
+          bkashFee: 20,
+          base6000: 6000,
+          base500: 500
+        },
+        studentAdjK33: 0,
+        receipts: [
+          { id: 'r1', date: '01-11-26', particulars: 'Opening Bank Balance', amount: 1005000, isBank: true },
+          { id: 'r2', date: '01-11-26', particulars: 'Opening Cash Balance', amount: 407745, isOpeningCash: true },
+          { id: 'r3', date: '01-11-26', particulars: 'Tuition/Boarding Fee', amount: 37000 },
+          { id: 'r4', date: '02-11-26', particulars: 'Tuition/Boarding Fee', amount: 22300 },
+          { id: 'r5', date: '03-11-26', particulars: 'Tuition/Boarding Fee', amount: 44300 },
+          { id: 'r6', date: '04-11-26', particulars: 'Tuition/Boarding Fee', amount: 19000 },
+          { id: 'r7', date: '05-11-26', particulars: 'Tuition/Boarding Fee', amount: 20500 },
+          { id: 'r8', date: '06-11-26', particulars: 'Tuition/Boarding Fee', amount: 30800 },
+          { id: 'r9', date: '07-11-26', particulars: 'Tuition/Boarding Fee', amount: 27300 },
+          { id: 'r10', date: '08-11-26', particulars: 'Tuition/Boarding Fee', amount: 15900 },
+          { id: 'r11', date: '08-11-26', particulars: 'Received from Mutawalli Saheb.', amount: 543400, isMutawalli: true },
+          { id: 'r12', date: '09-11-26', particulars: 'Tuition/Boarding Fee', amount: 17000 },
+          { id: 'r13', date: '10-11-26', particulars: 'Tuition/Boarding Fee', amount: 40100 },
+          { id: 'r14', date: '11-11-26', particulars: 'Tuition/Boarding Fee', amount: 25300 },
+          { id: 'r15', date: '12-11-26', particulars: 'Tuition/Boarding Fee', amount: 57850 },
+          { id: 'r16', date: '13-11-26', particulars: 'Tuition/Boarding Fee', amount: 52700 },
+          { id: 'r17', date: '14-11-26', particulars: 'Tuition/Boarding Fee', amount: 54100 },
+          { id: 'r18', date: '15-11-26', particulars: 'Tuition/Boarding Fee', amount: 31400 },
+          { id: 'r19', date: '16-11-26', particulars: 'Tuition/Boarding Fee', amount: 55100 }
+        ],
+        payments: [
+          { id: 'p1', date: '02-11-26', voucher: 904, particulars: 'Bording Bazar', amount: 32960 },
+          { id: 'p2', date: '02-11-26', voucher: 903, particulars: 'Bording Bazar', amount: 11240 },
+          { id: 'p3', date: '02-11-26', voucher: 902, particulars: 'Others Cost', amount: 4870 },
+          { id: 'p4', date: '03-11-26', voucher: 905, particulars: 'Bording Bazar', amount: 15460 },
+          { id: 'p5', date: '05-11-26', voucher: 906, particulars: 'Bording Bazar', amount: 12500 },
+          { id: 'p6', date: '06-11-26', voucher: 907, particulars: 'Mahman cost', amount: 8550 },
+          { id: 'p7', date: '06-11-26', voucher: 908, particulars: 'Bording Bazar', amount: 21840 },
+          { id: 'p8', date: '07-11-26', voucher: 909, particulars: 'Bording Bazar', amount: 25800 },
+          { id: 'p9', date: '08-11-26', voucher: 910, particulars: 'Bording Bazar', amount: 16500 },
+          { id: 'p10', date: '09-11-26', voucher: 911, particulars: 'Staff Salary', amount: 543400 },
+          { id: 'p11', date: '09-11-26', voucher: 912, particulars: 'Monthly Bazaar', amount: 246880 },
+          { id: 'p12', date: '10-11-26', voucher: 913, particulars: 'Bording Bazar', amount: 11420 },
+          { id: 'p13', date: '10-11-26', voucher: 914, particulars: 'Book Expenses', amount: 14950 },
+          { id: 'p14', date: '11-11-26', voucher: 915, particulars: 'Operating expenses', amount: 6510 },
+          { id: 'p15', date: '13-11-26', voucher: 916, particulars: 'Bording Bazar', amount: 22880 },
+          { id: 'p16', date: '13-11-26', voucher: 917, particulars: 'Firewood/Lakri Cost', amount: 60000 },
+          { id: 'p17', date: '14-11-26', voucher: 918, particulars: 'Bording Bazar', amount: 19620 },
+          { id: 'p18', date: '14-11-26', voucher: 919, particulars: 'Necessary Expense', amount: 9365 },
+          { id: 'p19', date: '15-11-26', voucher: 920, particulars: 'Bording Bazar', amount: 29700 },
+          { id: 'p20', date: '16-11-26', voucher: 921, particulars: 'Electricity Bill', amount: 102096 }
+        ],
+        officeAllocations: [
+          { id: 'o1', name: 'OFFICE JOMA', amount: 278100 },
+          { id: 'o2', name: 'Hossin vai furniture', amount: 26000 },
+          { id: 'o3', name: 'raihan baburci', amount: 1200 },
+          { id: 'o4', name: 'abu bakar siddik', amount: 1000 },
+          { id: 'o5', name: 'saifullah saheb (1)', amount: 3000 },
+          { id: 'o6', name: 'saifullah saheb (2)', amount: 2000 }
+        ],
+        box3Deposits: [
+          { id: 'd1', name: 'Student ac', amount: 0 },
+          { id: 'd2', name: 'Bkash stu', amount: 0 },
+          { id: 'd3', name: 'Nagad stu', amount: 0 },
+          { id: 'd4', name: 'SOMITI JOMA', amount: 20000 },
+          { id: 'd5', name: 'Mosjid fund', amount: 2625 },
+          { id: 'd6', name: 'extra personal AC', amount: 500 },
+          { id: 'd7', name: 'personal ac', amount: 6000 },
+          { id: 'd8', name: 'personal ac brother', amount: 2000 },
+          { id: 'd9', name: 'personal ac father', amount: 50000 },
+          { id: 'd10', name: 'পার্সোনাল খরচ (বাদ)', amount: -10 }
+        ],
+        cashBuckets: [
+          { id: 'c2', name: 'Cash 2', amount: 0 },
+          { id: 'c3', name: 'Cash 3', amount: 0 },
+          { id: 'c4', name: 'Cash 4 (অফিসে জমা)', amount: 30000 },
+          { id: 'c5', name: 'Cash 5', amount: 0 },
+          { id: 'c6', name: 'Cash 6 (হাতে ক্যাশ ১)', amount: 1250 },
+          { id: 'c7', name: 'Cash 7 (হাতে ক্যাশ ২)', amount: 500 },
+          { id: 'c8', name: 'Cash 8', amount: 0 }
+        ],
+        nagadRaw: 4636,
+        bkashRaw: 13910,
+        loansGiven: [
+          { id: 'l1', name: 'REDONE', amount: 5000 }
+        ],
+        personalExpenses: [
+          { id: 'pe1', title: '🥜 কাঠবাদাম ও কাজুবাদাম', bucket: 'personal6000', amount: 1540 },
+          { id: 'pe2', title: '📚 বাচ্চার বই', bucket: 'personal6000', amount: 100 },
+          { id: 'pe3', title: '🥐 নিজের নাস্তা', bucket: 'personal6000', amount: 20 },
+          { id: 'pe4', title: '🍵 বাড়িতে চা (১ম)', bucket: 'personal6000', amount: 10 },
+          { id: 'pe5', title: '🍵 বাড়িতে চা (২য়)', bucket: 'personal6000', amount: 10 },
+          { id: 'pe6', title: '👤 নিজের খরচ', bucket: 'personal6000', amount: 400 },
+          { id: 'pe7', title: '🍇 শাশুড়ির জন্য আঙ্গুর', bucket: 'personal6000', amount: 230 },
+          { id: 'pe8', title: '🍎 আপেল ও মাল্টা', bucket: 'personal6000', amount: 200 }
+        ],
+        stagingRows: [
+          { id: 'st1', type: 'receipt', date: '17-11-26', voucher: '', particulars: 'Tuition/Boarding Fee', amount: 42500 },
+          { id: 'st2', type: 'payment', date: '17-11-26', voucher: 922, particulars: 'Bording Bazar', amount: 18400 },
+          { id: 'st3', type: 'payment', date: '17-11-26', voucher: 923, particulars: 'Others Cost', amount: 2150 }
+        ]
+      };
+    }
+
+    let state = loadState();
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && Array.isArray(parsed.receipts) && Array.isArray(parsed.admins)) {
+            return parsed;
+          }
+        }
+      } catch (e) {}
+      return getDefaultState();
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {}
+    }
+
+    function showToast(msg) {
+      const box = document.getElementById('toastBox');
+      const text = document.getElementById('toastMsg');
+      if (!box || !text) return;
+      text.textContent = msg;
+      box.classList.remove('hidden');
+      if (window._toastTimer) clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(function() {
+        box.classList.add('hidden');
+      }, 2800);
+    }
+
+    function fmtNum(n, decimals) {
+      const val = Number(n) || 0;
+      if (decimals !== undefined) {
+        return val.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+      }
+      if (Math.abs(val - Math.round(val)) > 0.001) {
+        return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+      return Math.round(val).toLocaleString('en-US');
+    }
+
+    // ==================== AUTH & ADMIN PANEL ====================
+    function handleLogin() {
+      const u = (document.getElementById('loginUsername').value || '').trim().toLowerCase();
+      const p = (document.getElementById('loginPin').value || '').trim();
+      const err = document.getElementById('loginErrorMsg');
+
+      const matched = state.admins.find(function(a) {
+        return a.username.toLowerCase() === u && a.pin === p;
+      });
+
+      if (matched) {
+        loggedInUser = matched.username;
+        err.classList.add('hidden');
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('mainAppShell').classList.remove('hidden');
+        document.getElementById('loggedInAdminBadge').textContent = '👤 অ্যাডমিন: ' + matched.username;
+        renderAll();
+        showToast('স্বাগতম ' + matched.username + ' — অ্যাডমিন হিসেবে লগইন সম্পন্ন ✅');
+      } else {
+        err.classList.remove('hidden');
+      }
+    }
+
+    function handleLogout() {
+      loggedInUser = null;
+      document.getElementById('mainAppShell').classList.add('hidden');
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('loginPin').value = '';
+      showToast('অ্যাপ লক করা হয়েছে 🔒');
+    }
+
+    function addOrUpdateAdmin() {
+      const u = (document.getElementById('newAdminUser').value || '').trim().toLowerCase();
+      const p = (document.getElementById('newAdminPin').value || '').trim();
+      if (!u || !p) {
+        showToast('অ্যাডমিন আইডি ও পিন উভয়ই লিখুন');
+        return;
+      }
+      const existing = state.admins.find(function(a) { return a.username.toLowerCase() === u; });
+      if (existing) {
+        existing.pin = p;
+        showToast(u + '-এর পিন আপডেট করা হয়েছে ✅');
+      } else {
+        state.admins.push({ username: u, pin: p, role: 'অ্যাডমিন' });
+        showToast('নতুন অ্যাডমিন (' + u + ') যুক্ত করা হয়েছে ✅');
+      }
+      document.getElementById('newAdminUser').value = '';
+      document.getElementById('newAdminPin').value = '';
+      saveState();
+      renderAdminPanel();
+    }
+
+    function removeAdmin(username) {
+      if (state.admins.length <= 1) {
+        showToast('অন্তত একজন অ্যাডমিন থাকতে হবে');
+        return;
+      }
+      state.admins = state.admins.filter(function(a) { return a.username !== username; });
+      saveState();
+      renderAdminPanel();
+      showToast('অ্যাডমিন সরানো হয়েছে');
+    }
+
+    function renderAdminPanel() {
+      const box = document.getElementById('adminListContainer');
+      if (!box) return;
+      box.innerHTML = state.admins.map(function(a) {
+        return '<div class="flex items-center justify-between bg-emerald-50/70 border border-emerald-200 rounded-xl px-3 py-2 text-xs">' +
+          '<div>' +
+            '<span class="font-bold text-emerald-950">👤 ' + a.username + '</span>' +
+            '<span class="ml-2 text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full font-semibold">' + a.role + '</span>' +
+          '</div>' +
+          '<div class="flex items-center gap-3">' +
+            '<span class="text-emerald-700 num-font">PIN: ••••</span>' +
+            (state.admins.length > 1 ? '<button onclick="removeAdmin(\'' + a.username + '\')" class="text-rose-600 hover:underline font-bold">মুছুন</button>' : '') +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    // ==================== NAVIGATION ====================
+    function switchTab(tabName) {
+      const tabs = ['sheet', 'photo', 'admin'];
+      tabs.forEach(function(t) {
+        const view = document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1));
+        const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (view) {
+          if (t === tabName) view.classList.remove('hidden');
+          else view.classList.add('hidden');
+        }
+        if (btn) {
+          if (t === tabName) {
+            btn.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition bg-white text-emerald-950 shadow';
+          } else {
+            btn.className = 'px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition text-emerald-100 hover:bg-emerald-800/60';
+          }
+        }
+      });
+    }
+
+    function applyBox3Preset(mode) {
+      state.mode = mode;
+      if (mode === 'original') {
+        state.box3Deposits = [
+          { id: 'd1', name: 'Student ac', amount: 0 },
+          { id: 'd2', name: 'Bkash stu', amount: 500 },
+          { id: 'd3', name: 'Nagad stu', amount: 0 },
+          { id: 'd4', name: 'SOMITI JOMA', amount: 20000 },
+          { id: 'd5', name: 'Mosjid fund', amount: 2625 },
+          { id: 'd7', name: 'personal ac', amount: 5500 },
+          { id: 'd8', name: 'personal ac brother', amount: 2000 },
+          { id: 'd9', name: 'personal ac father', amount: 50000 }
+        ];
+        state.cashBuckets = [
+          { id: 'c2', name: 'Cash 2', amount: 0 },
+          { id: 'c3', name: 'Cash 3', amount: 0 },
+          { id: 'c4', name: 'Cash 4', amount: 30000 },
+          { id: 'c5', name: 'Cash 5', amount: 0 },
+          { id: 'c6', name: 'Cash 6', amount: 1260 },
+          { id: 'c7', name: 'Cash 7', amount: 0 },
+          { id: 'c8', name: 'Cash 8', amount: 0 }
+        ];
+        showToast('মূল শিট মোড চালু হয়েছে');
+      } else {
+        state.box3Deposits = [
+          { id: 'd1', name: 'Student ac', amount: 0 },
+          { id: 'd2', name: 'Bkash stu', amount: 0 },
+          { id: 'd3', name: 'Nagad stu', amount: 0 },
+          { id: 'd4', name: 'SOMITI JOMA', amount: 20000 },
+          { id: 'd5', name: 'Mosjid fund', amount: 2625 },
+          { id: 'd6', name: 'extra personal AC', amount: 500 },
+          { id: 'd7', name: 'personal ac', amount: 6000 },
+          { id: 'd8', name: 'personal ac brother', amount: 2000 },
+          { id: 'd9', name: 'personal ac father', amount: 50000 },
+          { id: 'd10', name: 'পার্সোনাল খরচ (বাদ)', amount: -10 }
+        ];
+        state.cashBuckets = [
+          { id: 'c2', name: 'Cash 2', amount: 0 },
+          { id: 'c3', name: 'Cash 3', amount: 0 },
+          { id: 'c4', name: 'Cash 4 (অফিসে জমা)', amount: 30000 },
+          { id: 'c5', name: 'Cash 5', amount: 0 },
+          { id: 'c6', name: 'Cash 6 (হাতে ক্যাশ ১)', amount: 1250 },
+          { id: 'c7', name: 'Cash 7 (হাতে ক্যাশ ২)', amount: 500 },
+          { id: 'c8', name: 'Cash 8', amount: 0 }
+        ];
+        showToast('আপডেটেড পার্সোনাল মোড চালু হয়েছে');
+      }
+      saveState();
+      renderAll();
+    }
+
+    function computeMetrics() {
+      let bankBalance = 0;
+      let totalCashReceipt = 0;
+      state.receipts.forEach(function(r) {
+        const amt = Number(r.amount) || 0;
+        if (r.isBank || r.particulars.toLowerCase().indexOf('opening bank') !== -1) {
+          bankBalance += amt;
+        } else {
+          totalCashReceipt += amt;
+        }
+      });
+
+      let totalPayment = 0;
+      state.payments.forEach(function(p) {
+        totalPayment += (Number(p.amount) || 0);
+      });
+
+      const cashInHand = totalCashReceipt - totalPayment;
+      const totalBalance = cashInHand + bankBalance;
+
+      let officeTotal = 0;
+      state.officeAllocations.forEach(function(o) {
+        officeTotal += (Number(o.amount) || 0);
+      });
+
+      const madrasaCash = cashInHand + (Number(state.studentAdjK33) || 0) - officeTotal;
+
+      let otherDeposits = 0;
+      state.box3Deposits.forEach(function(d) {
+        otherDeposits += (Number(d.amount) || 0);
+      });
+      const expectedTotal = madrasaCash + otherDeposits;
+
+      let cashBucketsTotal = 0;
+      state.cashBuckets.forEach(function(c) {
+        cashBucketsTotal += (Number(c.amount) || 0);
+      });
+
+      const nagadRaw = Number(state.nagadRaw) || 0;
+      const bkashRaw = Number(state.bkashRaw) || 0;
+      const nagadNet = nagadRaw - (nagadRaw / 1000 * (Number(state.rules.nagadFee) || 15));
+      const bkashNet = bkashRaw - (bkashRaw / 1000 * (Number(state.rules.bkashFee) || 20));
+
+      let loansTotal = 0;
+      state.loansGiven.forEach(function(l) {
+        loansTotal += (Number(l.amount) || 0);
+      });
+
+      const actualTotal = cashBucketsTotal + nagadNet + bkashNet + loansTotal;
+      const box3Diff = expectedTotal - actualTotal;
+      const box3DiffRounded = Math.round(box3Diff);
+
+      let spent6000 = 0, spent500 = 0;
+      state.personalExpenses.forEach(function(pe) {
+        const amt = Number(pe.amount) || 0;
+        if (pe.bucket === 'extra500') spent500 += amt;
+        else spent6000 += amt;
+      });
+
+      return {
+        bankBalance: bankBalance,
+        totalCashReceipt: totalCashReceipt,
+        totalPayment: totalPayment,
+        cashInHand: cashInHand,
+        totalBalance: totalBalance,
+        officeTotal: officeTotal,
+        madrasaCash: madrasaCash,
+        expectedTotal: expectedTotal,
+        nagadNet: nagadNet,
+        bkashNet: bkashNet,
+        actualTotal: actualTotal,
+        box3Diff: box3Diff,
+        box3DiffRounded: box3DiffRounded,
+        spent6000: spent6000,
+        spent500: spent500,
+        rem6000: (Number(state.rules.base6000) || 6000) - spent6000,
+        rem500: (Number(state.rules.base500) || 500) - spent500
+      };
+    }
+
+    function renderAll() {
+      const m = computeMetrics();
+
+      const btnOrig = document.getElementById('btnModeOriginal');
+      const btnBlane = document.getElementById('btnModeBlane');
+      if (btnOrig && btnBlane) {
+        if (state.mode === 'original') {
+          btnOrig.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold border transition bg-emerald-700 text-white border-emerald-700 shadow-sm';
+          btnBlane.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold border transition bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100';
+        } else {
+          btnBlane.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold border transition bg-emerald-700 text-white border-emerald-700 shadow-sm';
+          btnOrig.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold border transition bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100';
+        }
+      }
+
+      document.getElementById('kpiCashInHand').textContent = fmtNum(m.cashInHand) + ' ৳';
+      document.getElementById('kpiBankBalance').textContent = fmtNum(m.bankBalance) + ' ৳';
+      document.getElementById('kpiOfficeTotal').textContent = fmtNum(m.officeTotal) + ' ৳';
+      document.getElementById('kpiMadrasaCash').textContent = fmtNum(m.madrasaCash) + ' ৳';
+      document.getElementById('kpiBox3Diff').textContent = fmtNum(m.box3DiffRounded) + ' ৳';
+
+      let statusLabel = 'মিলে গেছে ✅';
+      if (m.box3DiffRounded > 0) statusLabel = 'জমা থেকে টাকা কম';
+      else if (m.box3DiffRounded < 0) statusLabel = 'জমা থেকে টাকা বেশি';
+      document.getElementById('kpiBox3Status').textContent = statusLabel;
+
+      // Box 1: Receipts
+      document.getElementById('receiptTableBody').innerHTML = state.receipts.map(function(r, idx) {
+        const bg = r.isBank ? 'bg-teal-50/70 font-semibold' : (r.isOpeningCash ? 'bg-emerald-50 font-semibold' : 'hover:bg-emerald-50/40');
+        return '<tr class="' + bg + '">' +
+          '<td class="text-center text-emerald-700 num-font">' + (idx + 1) + '</td>' +
+          '<td><input type="text" value="' + r.date + '" onchange="editReceipt(\'' + r.id + '\', \'date\', this.value)" class="cell-input num-font text-xs"></td>' +
+          '<td><input type="text" value="' + r.particulars + '" onchange="editReceipt(\'' + r.id + '\', \'particulars\', this.value)" class="cell-input text-xs"></td>' +
+          '<td><input type="number" value="' + r.amount + '" onchange="editReceipt(\'' + r.id + '\', \'amount\', this.value)" class="cell-input text-right num-font font-semibold text-xs"></td>' +
+          '<td class="text-center"><button onclick="deleteReceipt(\'' + r.id + '\')" class="text-emerald-400 hover:text-rose-600 font-bold">×</button></td>' +
+        '</tr>';
+      }).join('');
+
+      // Box 1: Payments
+      document.getElementById('paymentTableBody').innerHTML = state.payments.map(function(p, idx) {
+        return '<tr class="hover:bg-emerald-50/40">' +
+          '<td class="text-center text-emerald-700 num-font">' + (idx + 1) + '</td>' +
+          '<td><input type="text" value="' + p.date + '" onchange="editPayment(\'' + p.id + '\', \'date\', this.value)" class="cell-input num-font text-xs"></td>' +
+          '<td><input type="number" value="' + p.voucher + '" onchange="editPayment(\'' + p.id + '\', \'voucher\', this.value)" class="cell-input text-center num-font text-xs font-semibold text-teal-800"></td>' +
+          '<td><input type="text" value="' + p.particulars + '" onchange="editPayment(\'' + p.id + '\', \'particulars\', this.value)" class="cell-input text-xs"></td>' +
+          '<td><input type="number" value="' + p.amount + '" onchange="editPayment(\'' + p.id + '\', \'amount\', this.value)" class="cell-input text-right num-font font-semibold text-xs"></td>' +
+          '<td class="text-center"><button onclick="deletePayment(\'' + p.id + '\')" class="text-emerald-400 hover:text-rose-600 font-bold">×</button></td>' +
+        '</tr>';
+      }).join('');
+
+      document.getElementById('box1TotalReceipt').textContent = fmtNum(m.totalCashReceipt) + ' ৳';
+      document.getElementById('box1TotalPayment').textContent = fmtNum(m.totalPayment) + ' ৳';
+      document.getElementById('box1CashInHand').textContent = fmtNum(m.cashInHand) + ' ৳';
+      document.getElementById('box1BankBalance').textContent = fmtNum(m.bankBalance) + ' ৳';
+      document.getElementById('box1TotalBalance').textContent = fmtNum(m.totalBalance) + ' ৳';
+
+      // Box 2: Office & Loans
+      document.getElementById('officeTableBody').innerHTML = state.officeAllocations.map(function(o) {
+        return '<tr class="hover:bg-emerald-50/40">' +
+          '<td><input type="text" value="' + o.name + '" onchange="editOffice(\'' + o.id + '\', \'name\', this.value)" class="cell-input text-xs font-medium"></td>' +
+          '<td><input type="number" value="' + o.amount + '" onchange="editOffice(\'' + o.id + '\', \'amount\', this.value)" class="cell-input text-right num-font font-semibold text-xs"></td>' +
+          '<td class="text-center"><button onclick="deleteOffice(\'' + o.id + '\')" class="text-emerald-400 hover:text-rose-600 font-bold">×</button></td>' +
+        '</tr>';
+      }).join('');
+      document.getElementById('box2TotalAllocated').textContent = fmtNum(m.officeTotal) + ' ৳';
+      document.getElementById('box2MadrasaCash').textContent = fmtNum(m.madrasaCash) + ' ৳';
+
+      // Box 3 Left
+      let dHtml = '<tr class="bg-rose-50 font-bold text-rose-900">' +
+        '<td>Madrasa cash (P32)</td>' +
+        '<td class="text-right num-font">' + fmtNum(m.madrasaCash) + '</td>' +
+        '<td class="text-center text-[10px]">🔗</td>' +
+      '</tr>';
+      dHtml += state.box3Deposits.map(function(d) {
+        const isPersonal = d.name.toLowerCase().indexOf('personal') !== -1 || d.name.indexOf('পার্সোনাল') !== -1;
+        return '<tr class="' + (isPersonal ? 'bg-emerald-50/80' : 'hover:bg-emerald-50/40') + '">' +
+          '<td><input type="text" value="' + d.name + '" onchange="editDeposit(\'' + d.id + '\', \'name\', this.value)" class="cell-input text-xs font-medium"></td>' +
+          '<td><input type="number" value="' + d.amount + '" onchange="editDeposit(\'' + d.id + '\', \'amount\', this.value)" class="cell-input text-right num-font font-semibold text-xs"></td>' +
+          '<td class="text-center"><button onclick="deleteDeposit(\'' + d.id + '\')" class="text-emerald-400 hover:text-rose-600 font-bold">×</button></td>' +
+        '</tr>';
+      }).join('');
+      document.getElementById('box3DepositBody').innerHTML = dHtml;
+      document.getElementById('box3TotalExpected').textContent = fmtNum(m.expectedTotal) + ' ৳';
+
+      // Box 3 Right
+      let hHtml = state.cashBuckets.map(function(c) {
+        const bg = c.amount > 0 ? 'bg-teal-50/70 font-semibold' : '';
+        return '<tr class="' + bg + '">' +
+          '<td><input type="text" value="' + c.name + '" onchange="editCashBucket(\'' + c.id + '\', \'name\', this.value)" class="cell-input text-xs"></td>' +
+          '<td><input type="number" value="' + c.amount + '" onchange="editCashBucket(\'' + c.id + '\', \'amount\', this.value)" class="cell-input text-right num-font font-semibold text-xs"></td>' +
+          '<td class="text-center text-[10px] text-emerald-600">ক্যাশ</td>' +
+        '</tr>';
+      }).join('');
+
+      hHtml += '<tr class="bg-amber-50/80">' +
+        '<td class="font-bold text-amber-900">🟠 Nogod (-' + state.rules.nagadFee + '/হাজার)</td>' +
+        '<td class="text-right num-font font-bold text-amber-900">' + fmtNum(m.nagadNet, 2) + '</td>' +
+        '<td><input type="number" value="' + state.nagadRaw + '" onchange="updateMobileRaw(\'nagad\', this.value)" class="cell-input text-right num-font font-bold text-xs bg-white border border-amber-300"></td>' +
+      '</tr>';
+      hHtml += '<tr class="bg-pink-50/80">' +
+        '<td class="font-bold text-pink-900">💗 Bkash (-' + state.rules.bkashFee + '/হাজার)</td>' +
+        '<td class="text-right num-font font-bold text-pink-900">' + fmtNum(m.bkashNet, 2) + '</td>' +
+        '<td><input type="number" value="' + state.bkashRaw + '" onchange="updateMobileRaw(\'bkash\', this.value)" class="cell-input text-right num-font font-bold text-xs bg-white border border-pink-300"></td>' +
+      '</tr>';
+      hHtml += '<tr class="bg-emerald-100 font-bold text-emerald-950 text-center"><td colspan="3">🤝 LOAN GIVEN (হাওলাত দেওয়া)</td></tr>';
+      hHtml += state.loansGiven.map(function(l) {
+        return '<tr class="bg-emerald-50/50">' +
+          '<td><input type="text" value="' + l.name + '" onchange="editLoan(\'' + l.id + '\', \'name\', this.value)" class="cell-input text-xs font-semibold"></td>' +
+          '<td><input type="number" value="' + l.amount + '" onchange="editLoan(\'' + l.id + '\', \'amount\', this.value)" class="cell-input text-right num-font font-semibold text-xs"></td>' +
+          '<td class="text-center"><button onclick="deleteLoan(\'' + l.id + '\')" class="text-emerald-400 hover:text-rose-600 font-bold">×</button></td>' +
+        '</tr>';
+      }).join('');
+      document.getElementById('box3HoldingsBody').innerHTML = hHtml;
+      document.getElementById('box3TotalActual').textContent = fmtNum(m.actualTotal, 2) + ' ৳';
+
+      // Box 3 Status Banner
+      const banner = document.getElementById('box3StatusBanner');
+      document.getElementById('box3BannerText').textContent = statusLabel;
+      document.getElementById('box3BannerExact').textContent = fmtNum(m.box3DiffRounded) + ' ৳';
+      document.getElementById('box3BannerUnrounded').textContent = 'সঠিক ভগ্নাংশ: ' + fmtNum(m.box3Diff, 2) + ' ৳';
+      if (m.box3DiffRounded === 0) {
+        banner.className = 'rounded-xl p-3 border-2 flex flex-wrap items-center justify-between gap-2 bg-emerald-100 border-emerald-500 text-emerald-950';
+      } else if (m.box3DiffRounded > 0) {
+        banner.className = 'rounded-xl p-3 border-2 flex flex-wrap items-center justify-between gap-2 bg-rose-50 border-rose-400 text-rose-900';
+      } else {
+        banner.className = 'rounded-xl p-3 border-2 flex flex-wrap items-center justify-between gap-2 bg-amber-50 border-amber-400 text-amber-900';
+      }
+
+      // Compact Mini Personal Summary inside Box 3
+      document.getElementById('miniSpent6000').textContent = fmtNum(m.spent6000);
+      document.getElementById('miniRem6000').textContent = fmtNum(m.rem6000) + ' ৳';
+      document.getElementById('miniRem500').textContent = fmtNum(m.rem500) + ' ৳';
+      document.getElementById('miniPersonalList').innerHTML = state.personalExpenses.map(function(pe) {
+        const tag = pe.bucket === 'extra500' ? '🚕 ৫০০৳' : '👤 ৬০০০৳';
+        return '<tr>' +
+          '<td class="text-xs">' + pe.title + '</td>' +
+          '<td class="text-center text-[10px] text-emerald-700">' + tag + '</td>' +
+          '<td class="text-right num-font font-bold text-xs">' + fmtNum(pe.amount) + ' ৳</td>' +
+          '<td class="w-6 text-center"><button onclick="deleteMiniPersonalExpense(\'' + pe.id + '\')" class="text-emerald-400 hover:text-rose-600 font-bold">×</button></td>' +
+        '</tr>';
+      }).join('');
+
+      renderStagingAndMatcher(m);
+      renderAdminPanel();
+    }
+
+    function toggleMiniPersonal() {
+      const drawer = document.getElementById('miniPersonalDrawer');
+      const btn = document.getElementById('btnToggleMiniPersonal');
+      if (drawer.classList.contains('hidden')) {
+        drawer.classList.remove('hidden');
+        btn.textContent = 'লুকান ▴';
+      } else {
+        drawer.classList.add('hidden');
+        btn.textContent = 'খরচ দেখুন ▾';
+      }
+    }
+
+    function addMiniPersonalExpense() {
+      const titleEl = document.getElementById('miniExpTitle');
+      const bucketEl = document.getElementById('miniExpBucket');
+      const amtEl = document.getElementById('miniExpAmount');
+      const amt = Number(amtEl.value) || 0;
+      if (amt <= 0) {
+        showToast('টাকার পরিমাণ লিখুন');
+        return;
+      }
+      state.personalExpenses.push({
+        id: 'pe_' + Date.now(),
+        title: (titleEl.value || '').trim() || 'পার্সোনাল খরচ',
+        bucket: bucketEl.value,
+        amount: amt
+      });
+      titleEl.value = '';
+      amtEl.value = '';
+      saveState();
+      renderAll();
+      showToast('খরচ যুক্ত হয়েছে ✅');
+    }
+
+    function deleteMiniPersonalExpense(id) {
+      state.personalExpenses = state.personalExpenses.filter(function(item) { return item.id !== id; });
+      saveState();
+      renderAll();
+    }
+
+    // Inline Edits
+    function editReceipt(id, field, val) {
+      const item = state.receipts.find(function(r) { return r.id === id; });
+      if (!item) return;
+      item[field] = field === 'amount' ? (Number(val) || 0) : val;
+      saveState(); renderAll();
+    }
+    function deleteReceipt(id) {
+      state.receipts = state.receipts.filter(function(r) { return r.id !== id; });
+      saveState(); renderAll();
+    }
+    function editPayment(id, field, val) {
+      const item = state.payments.find(function(p) { return p.id === id; });
+      if (!item) return;
+      item[field] = (field === 'amount' || field === 'voucher') ? (Number(val) || 0) : val;
+      saveState(); renderAll();
+    }
+    function deletePayment(id) {
+      state.payments = state.payments.filter(function(p) { return p.id !== id; });
+      saveState(); renderAll();
+    }
+    function editOffice(id, field, val) {
+      const item = state.officeAllocations.find(function(o) { return o.id === id; });
+      if (!item) return;
+      item[field] = field === 'amount' ? (Number(val) || 0) : val;
+      saveState(); renderAll();
+    }
+    function deleteOffice(id) {
+      state.officeAllocations = state.officeAllocations.filter(function(o) { return o.id !== id; });
+      saveState(); renderAll();
+    }
+    function updateStudentAdjK33(val) {
+      state.studentAdjK33 = Number(val) || 0;
+      saveState(); renderAll();
+    }
+    function editDeposit(id, field, val) {
+      const item = state.box3Deposits.find(function(d) { return d.id === id; });
+      if (!item) return;
+      item[field] = field === 'amount' ? (Number(val) || 0) : val;
+      saveState(); renderAll();
+    }
+    function deleteDeposit(id) {
+      state.box3Deposits = state.box3Deposits.filter(function(d) { return d.id !== id; });
+      saveState(); renderAll();
+    }
+    function editCashBucket(id, field, val) {
+      const item = state.cashBuckets.find(function(c) { return c.id === id; });
+      if (!item) return;
+      item[field] = field === 'amount' ? (Number(val) || 0) : val;
+      saveState(); renderAll();
+    }
+    function updateMobileRaw(provider, val) {
+      if (provider === 'nagad') state.nagadRaw = Number(val) || 0;
+      else state.bkashRaw = Number(val) || 0;
+      saveState(); renderAll();
+    }
+    function editLoan(id, field, val) {
+      const item = state.loansGiven.find(function(l) { return l.id === id; });
+      if (!item) return;
+      item[field] = field === 'amount' ? (Number(val) || 0) : val;
+      saveState(); renderAll();
+    }
+    function deleteLoan(id) {
+      state.loansGiven = state.loansGiven.filter(function(l) { return l.id !== id; });
+      saveState(); renderAll();
+    }
+
+    // Add Row Modal
+    function openAddModal(type) {
+      currentModalType = type;
+      const modal = document.getElementById('addRowModal');
+      const title = document.getElementById('modalTitle');
+      const dateWrap = document.getElementById('modalDateWrap');
+      const voucherWrap = document.getElementById('modalVoucherWrap');
+      const nameInput = document.getElementById('modalInputName');
+
+      if (type === 'receipt') {
+        title.textContent = '📥 বক্স ১-এ নতুন জমা যোগ করুন';
+        dateWrap.classList.remove('hidden');
+        voucherWrap.classList.add('hidden');
+        nameInput.value = 'Tuition/Boarding Fee';
+      } else if (type === 'payment') {
+        title.textContent = '📤 বক্স ১-এ নতুন খরচ ভাউচার যোগ করুন';
+        dateWrap.classList.remove('hidden');
+        voucherWrap.classList.remove('hidden');
+        const maxV = state.payments.reduce(function(acc, p) { return Math.max(acc, Number(p.voucher) || 0); }, 921);
+        document.getElementById('modalInputVoucher').value = maxV + 1;
+        nameInput.value = 'Bording Bazar';
+      } else if (type === 'office') {
+        title.textContent = '🏢 বক্স ২-এ অফিস জমা / সাময়িক ঋণ যোগ করুন';
+        dateWrap.classList.add('hidden');
+        voucherWrap.classList.add('hidden');
+        nameInput.value = '';
+      } else if (type === 'deposit') {
+        title.textContent = '📋 বক্স ৩-এ নতুন জমার খাত যোগ করুন';
+        dateWrap.classList.add('hidden');
+        voucherWrap.classList.add('hidden');
+        nameInput.value = '';
+      } else if (type === 'loan') {
+        title.textContent = '🤝 বক্স ৩-এ নতুন হাওলাত যোগ করুন';
+        dateWrap.classList.add('hidden');
+        voucherWrap.classList.add('hidden');
+        nameInput.value = '';
+      }
+
+      document.getElementById('modalInputAmount').value = '';
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeAddModal() {
+      const modal = document.getElementById('addRowModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function submitAddModal() {
+      const date = document.getElementById('modalInputDate').value || '17-11-26';
+      const voucher = Number(document.getElementById('modalInputVoucher').value) || 0;
+      const name = (document.getElementById('modalInputName').value || '').trim() || 'বিবরণ';
+      const amount = Number(document.getElementById('modalInputAmount').value) || 0;
+
+      if (currentModalType === 'receipt') {
+        state.receipts.push({ id: 'r_' + Date.now(), date: date, particulars: name, amount: amount });
+      } else if (currentModalType === 'payment') {
+        state.payments.push({ id: 'p_' + Date.now(), date: date, voucher: voucher, particulars: name, amount: amount });
+      } else if (currentModalType === 'office') {
+        state.officeAllocations.push({ id: 'o_' + Date.now(), name: name, amount: amount });
+      } else if (currentModalType === 'deposit') {
+        state.box3Deposits.push({ id: 'd_' + Date.now(), name: name, amount: amount });
+      } else if (currentModalType === 'loan') {
+        state.loansGiven.push({ id: 'l_' + Date.now(), name: name, amount: amount });
+      }
+
+      closeAddModal();
+      saveState();
+      renderAll();
+      showToast('নতুন সারি যোগ করা হয়েছে ✅');
+    }
+
+    // ==================== PHOTO OCR & STAGING ====================
+    function renderStagingAndMatcher(m) {
+      const checks = [
+        { name: 'Month Match (Nov 26)' },
+        { name: 'Date Match' },
+        { name: 'Common Head' },
+        { name: 'Amount Match' },
+        { name: 'Voucher Serial' },
+        { name: 'Cash: ' + fmtNum(m.cashInHand) },
+        { name: 'Bank: ' + fmtNum(m.bankBalance) },
+        { name: 'Total: ' + fmtNum(m.totalBalance) }
+      ];
+      document.getElementById('matcherChecklistGrid').innerHTML = checks.map(function(c) {
+        return '<div class="bg-white border border-emerald-200 rounded-lg px-2.5 py-1.5 flex items-center justify-between">' +
+          '<span class="font-medium text-emerald-900">' + c.name + '</span>' +
+          '<span class="text-emerald-600 font-bold">✅</span>' +
+        '</div>';
+      }).join('');
+
+      let rCount = 0, rSum = 0, pCount = 0, pSum = 0;
+      document.getElementById('stagingTableBody').innerHTML = state.stagingRows.map(function(st) {
+        if (st.type === 'receipt') { rCount++; rSum += (Number(st.amount) || 0); }
+        else { pCount++; pSum += (Number(st.amount) || 0); }
+        return '<tr>' +
+          '<td>' +
+            '<select onchange="editStaging(\'' + st.id + '\', \'type\', this.value)" class="cell-input text-xs font-bold ' + (st.type === 'receipt' ? 'text-emerald-700' : 'text-rose-700') + '">' +
+              '<option value="receipt" ' + (st.type === 'receipt' ? 'selected' : '') + '>📥 জমা</option>' +
+              '<option value="payment" ' + (st.type === 'payment' ? 'selected' : '') + '>📤 খরচ</option>' +
+            '</select>' +
+          '</td>' +
+          '<td><input type="text" value="' + st.date + '" onchange="editStaging(\'' + st.id + '\', \'date\', this.value)" class="cell-input num-font text-xs"></td>' +
+          '<td><input type="text" value="' + (st.voucher || '') + '" placeholder="-" onchange="editStaging(\'' + st.id + '\', \'voucher\', this.value)" class="cell-input text-center num-font text-xs"></td>' +
+          '<td><input type="text" value="' + st.particulars + '" onchange="editStaging(\'' + st.id + '\', \'particulars\', this.value)" class="cell-input text-xs font-medium"></td>' +
+          '<td><input type="number" value="' + st.amount + '" onchange="editStaging(\'' + st.id + '\', \'amount\', this.value)" class="cell-input text-right num-font font-bold text-xs"></td>' +
+          '<td class="text-center"><button onclick="deleteStaging(\'' + st.id + '\')" class="text-emerald-400 hover:text-rose-600 font-bold">×</button></td>' +
+        '</tr>';
+      }).join('');
+
+      document.getElementById('stagingSummaryText').textContent =
+        'প্রস্তুত: ' + rCount + 'টি জমা (' + fmtNum(rSum) + ' ৳) এবং ' + pCount + 'টি খরচ (' + fmtNum(pSum) + ' ৳)';
+    }
+
+    function editStaging(id, field, val) {
+      const item = state.stagingRows.find(function(s) { return s.id === id; });
+      if (!item) return;
+      item[field] = field === 'amount' ? (Number(val) || 0) : val;
+      saveState(); renderAll();
+    }
+    function deleteStaging(id) {
+      state.stagingRows = state.stagingRows.filter(function(s) { return s.id !== id; });
+      saveState(); renderAll();
+    }
+    function addBlankStagingRow() {
+      state.stagingRows.push({ id: 'st_' + Date.now(), type: 'payment', date: '17-11-26', voucher: 924, particulars: 'Bording Bazar', amount: 0 });
+      saveState(); renderAll();
+    }
+    function handleDragOver(e) { e.preventDefault(); document.getElementById('photoDropzone').classList.add('dropzone-active'); }
+    function handleDragLeave(e) { e.preventDefault(); document.getElementById('photoDropzone').classList.remove('dropzone-active'); }
+    function handleFileDrop(e) {
+      e.preventDefault();
+      document.getElementById('photoDropzone').classList.remove('dropzone-active');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) processUploadedPhoto(e.dataTransfer.files[0]);
+    }
+    function handleFileSelect(e) {
+      if (e.target && e.target.files && e.target.files[0]) processUploadedPhoto(e.target.files[0]);
+    }
+
+    function processUploadedPhoto(file) {
+      const container = document.getElementById('photoPreviewContainer');
+      const imgEl = document.getElementById('uploadedImageEl');
+      const demoGraphic = document.getElementById('demoStatementGraphic');
+      container.classList.remove('hidden');
+      demoGraphic.classList.add('hidden');
+      imgEl.classList.remove('hidden');
+      document.getElementById('photoFileName').textContent = file.name;
+      document.getElementById('ocrStatusText').textContent = '⏳ ছবি স্ক্যান হচ্ছে...';
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        imgEl.src = evt.target.result;
+        if (window.Tesseract) {
+          window.Tesseract.recognize(evt.target.result, 'eng')
+            .then(function(res) {
+              document.getElementById('ocrStatusText').textContent = 'স্ক্যান সম্পন্ন ✅';
+              const text = (res && res.data && res.data.text) ? res.data.text : '';
+              if (text.trim().length > 5) {
+                document.getElementById('rawSoftwareTextInput').value = text.trim();
+                parseTextIntoStagingRows(text);
+                showToast('ছবি থেকে হিসাব স্ক্যান সম্পন্ন ✅');
+              }
+            })
+            .catch(function() {
+              document.getElementById('ocrStatusText').textContent = 'প্রিভিউ প্রস্তুত ✅';
+            });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function loadDemoSoftwareStatement() {
+      document.getElementById('photoPreviewContainer').classList.remove('hidden');
+      document.getElementById('uploadedImageEl').classList.add('hidden');
+      const demoGraphic = document.getElementById('demoStatementGraphic');
+      demoGraphic.classList.remove('hidden');
+      document.getElementById('photoFileName').textContent = 'Software_Statement_17-11-2026.png';
+      document.getElementById('ocrStatusText').textContent = 'স্ক্যান সম্পন্ন ✅';
+      demoGraphic.innerHTML =
+        '<div class="text-amber-300 font-bold border-b border-emerald-700 pb-1">JAMIYATUL ABRAR SOFTWARE — 17-11-2026</div>' +
+        '<div>[RECEIPT] Tuition/Boarding Fee = 42,500 ৳</div>' +
+        '<div>[PAYMENT] Voucher #922 | Bording Bazar = 18,400 ৳</div>' +
+        '<div>[PAYMENT] Voucher #923 | Others Cost = 2,150 ৳</div>';
+      state.stagingRows = [
+        { id: 'st_d1', type: 'receipt', date: '17-11-26', voucher: '', particulars: 'Tuition/Boarding Fee', amount: 42500 },
+        { id: 'st_d2', type: 'payment', date: '17-11-26', voucher: 922, particulars: 'Bording Bazar', amount: 18400 },
+        { id: 'st_d3', type: 'payment', date: '17-11-26', voucher: 923, particulars: 'Others Cost', amount: 2150 }
+      ];
+      saveState(); renderAll();
+      showToast('১৭ নভেম্বরের ডেমো ফটো স্ক্যান করা হয়েছে ✅');
+    }
+
+    function parseRawTextToStaging() {
+      const raw = document.getElementById('rawSoftwareTextInput').value || '';
+      if (!raw.trim()) { showToast('সফটওয়্যারের লেখা পেস্ট করুন'); return; }
+      parseTextIntoStagingRows(raw);
+      showToast('টেক্সট থেকে হিসাব তৈরি হয়েছে ✅');
+    }
+
+    function parseTextIntoStagingRows(text) {
+      const lines = text.split(/\r?\n|\|/);
+      const newRows = [];
+      lines.forEach(function(line, i) {
+        const clean = line.trim();
+        if (!clean) return;
+        const nums = clean.match(/\d[\d,]*/g);
+        if (!nums || nums.length === 0) return;
+        const lastNum = Number(nums[nums.length - 1].replace(/,/g, '')) || 0;
+        if (lastNum <= 0) return;
+
+        const isReceipt = /tuition|boarding fee|ভর্তি|বোর্ডিং ফি|বেতন|receipt|জমা/i.test(clean);
+        const dateMatch = clean.match(/\b(\d{2}-\d{2}-\d{2,4})\b/);
+        const dateStr = dateMatch ? dateMatch[1] : '17-11-26';
+        const vMatch = clean.match(/\b(9\d{2})\b/);
+        const voucherNo = (!isReceipt && vMatch) ? Number(vMatch[1]) : '';
+
+        let part = isReceipt ? 'Tuition/Boarding Fee' : 'Bording Bazar';
+        if (/other/i.test(clean)) part = 'Others Cost';
+        else if (/electric|বিদ্যুৎ/i.test(clean)) part = 'Electricity Bill';
+
+        newRows.push({
+          id: 'st_ocr_' + Date.now() + '_' + i,
+          type: isReceipt ? 'receipt' : 'payment',
+          date: dateStr,
+          voucher: voucherNo,
+          particulars: part,
+          amount: lastNum
+        });
+      });
+      if (newRows.length > 0) {
+        state.stagingRows = newRows;
+        saveState(); renderAll();
+      }
+    }
+
+    function commitStagingToBox1() {
+      if (!state.stagingRows || state.stagingRows.length === 0) {
+        showToast('ইমপোর্ট করার মতো কোনো সারি নেই');
+        return;
+      }
+      let addedR = 0, addedP = 0;
+      state.stagingRows.forEach(function(st) {
+        const amt = Number(st.amount) || 0;
+        if (amt <= 0) return;
+        if (st.type === 'receipt') {
+          state.receipts.push({ id: 'r_imp_' + Date.now() + '_' + addedR, date: st.date || '17-11-26', particulars: st.particulars || 'Tuition/Boarding Fee', amount: amt });
+          addedR++;
+        } else {
+          state.payments.push({ id: 'p_imp_' + Date.now() + '_' + addedP, date: st.date || '17-11-26', voucher: Number(st.voucher) || 922, particulars: st.particulars || 'Bording Bazar', amount: amt });
+          addedP++;
+        }
+      });
+      state.stagingRows = [];
+      saveState(); renderAll(); switchTab('sheet');
+      showToast('বক্স ১-এ ' + addedR + 'টি জমা ও ' + addedP + 'টি খরচ যুক্ত হয়েছে ✅');
+    }
+
+    // ==================== RULES & EXPORT ====================
+    function updateCustomRule(key, val) {
+      state.rules[key] = Number(val) || 0;
+      saveState(); renderAll();
+    }
+    function resetToDefaultSheetData() {
+      state = getDefaultState();
+      saveState(); renderAll();
+      showToast('গুগল শিটের মূল ডেটায় রিসেট করা হয়েছে ✅');
+    }
+    function exportCSV() {
+      const m = computeMetrics();
+      let csv = 'Section,Date_or_SL,Voucher,Particulars,Amount\n';
+      state.receipts.forEach(function(r) { csv += 'Receipt,' + r.date + ',,"' + r.particulars + '",' + r.amount + '\n'; });
+      state.payments.forEach(function(p) { csv += 'Payment,' + p.date + ',' + p.voucher + ',"' + p.particulars + '",' + p.amount + '\n'; });
+      csv += 'Summary,,,Cash In Hand,' + m.cashInHand + '\n';
+      csv += 'Summary,,,Bank Balance,' + m.bankBalance + '\n';
+      csv += 'Summary,,,Madrasa Cash,' + m.madrasaCash + '\n';
+      csv += 'Summary,,,Box 3 Difference,' + m.box3Diff.toFixed(2) + '\n';
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'Madrasa_Cash_Statement_November_2026.csv';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      showToast('CSV ফাইল ডাউনলোড হয়েছে ✅');
+    }
+    function exportJSONBackup() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'Madrasa_Cash_App_Backup.json';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      showToast('JSON ব্যাকআপ ডাউনলোড হয়েছে ✅');
+    }
+
+
+    // ==================== GOOGLE SHEET LIVE SYNC & PWA SERVICE WORKER ====================
+    function saveSyncConfig() {
+      state.syncUrl = (document.getElementById('gsWebAppUrl').value || '').trim();
+      state.syncKey = (document.getElementById('gsSecretKey').value || '').trim() || 'abrar2026';
+      saveState();
+    }
+
+    function loadSyncConfigUI() {
+      const urlEl = document.getElementById('gsWebAppUrl');
+      const keyEl = document.getElementById('gsSecretKey');
+      if (urlEl && state.syncUrl) urlEl.value = state.syncUrl;
+      if (keyEl && state.syncKey) keyEl.value = state.syncKey;
+    }
+
+    function pullFromGoogleSheet() {
+      const url = (state.syncUrl || '').trim();
+      const key = (state.syncKey || 'abrar2026').trim();
+      if (!url) {
+        showToast('আগে Google Apps Script Web App URL বসান');
+        return;
+      }
+      const badge = document.getElementById('sheetSyncStatusBadge');
+      if (badge) badge.textContent = '⏳ গুগল শিট থেকে লোড হচ্ছে...';
+      fetch(url + '?key=' + encodeURIComponent(key))
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.status === 'ok') {
+            if (Array.isArray(data.receipts) && data.receipts.length > 0) state.receipts = data.receipts;
+            if (Array.isArray(data.payments) && data.payments.length > 0) state.payments = data.payments;
+            if (data.nagadRaw !== undefined) state.nagadRaw = Number(data.nagadRaw) || 0;
+            if (data.bkashRaw !== undefined) state.bkashRaw = Number(data.bkashRaw) || 0;
+            saveState();
+            renderAll();
+            if (badge) badge.textContent = '✅ শিট থেকে আপডেট হয়েছে';
+            showToast('গুগল শিট থেকে লাইভ হিসাব আনা হয়েছে ✅');
+          } else {
+            if (badge) badge.textContent = '❌ ত্রুটি: ' + (data.message || 'Unknown');
+            showToast('শিট সিঙ্ক ব্যর্থ হয়েছে: ' + (data.message || 'Check key'));
+          }
+        })
+        .catch(function() {
+          if (badge) badge.textContent = '⚠️ সংযোগ পাওয়া যায়নি';
+          showToast('গুগল শিটের সাথে সংযোগ করা যায়নি — URL যাচাই করুন');
+        });
+    }
+
+    function pushToGoogleSheet() {
+      const url = (state.syncUrl || '').trim();
+      const key = (state.syncKey || 'abrar2026').trim();
+      if (!url) {
+        showToast('আগে Google Apps Script Web App URL বসান');
+        return;
+      }
+      const badge = document.getElementById('sheetSyncStatusBadge');
+      if (badge) badge.textContent = '⏳ গুগল শিটে পাঠানো হচ্ছে...';
+      fetch(url, {
+        method: 'POST',
+        body: JSON.stringify({
+          key: key,
+          receipts: state.receipts,
+          payments: state.payments,
+          nagadRaw: state.nagadRaw,
+          bkashRaw: state.bkashRaw
+        })
+      })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.status === 'ok') {
+            if (badge) badge.textContent = '✅ শিটে সেভ হয়েছে';
+            showToast('সব হিসাব সরাসরি গুগল শিটে সেভ হয়েছে ✅');
+          } else {
+            if (badge) badge.textContent = '❌ ত্রুটি';
+            showToast('সেভ ব্যর্থ: ' + (data.message || 'Error'));
+          }
+        })
+        .catch(function() {
+          if (badge) badge.textContent = '⚠️ সংযোগ ব্যর্থ';
+          showToast('গুগল শিটে পাঠানো যায়নি — URL যাচাই করুন');
+        });
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('./service-worker.js').catch(function() {});
+        loadSyncConfigUI();
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', function() {
+      renderAll();
+    });
+  </script>
+</body>
+</html>

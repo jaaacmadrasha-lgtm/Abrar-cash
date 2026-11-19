@@ -1,0 +1,26 @@
+{
+  "name": "জামিয়াতুল আবরার — ক্যাশ স্টেটমেন্ট",
+  "short_name": "Abrar Cash",
+  "description": "Jamiyatul Abrar Al Islamia Anwara Complex — 3-Box Cash Statement, Software Photo Scanner & Admin Panel",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#064e3b",
+  "theme_color": "#047857",
+  "lang": "bn",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
